@@ -187,8 +187,8 @@ def lookup_phone_metadata(raw_phone: str) -> dict[str, str | bool | int | None]:
     if number is None:
         raise PhoneMetadataError(
             "Could not recognise this phone number. "
-            "Try including the country code, e.g. +91 98765 43210 for India "
-            "or +1 415 555 2671 for the US."
+            "Try entering just the 10-digit number (e.g. 8248389588) "
+            "or include the country code (e.g. +91 98765 43210)."
         )
 
     # Final validity check (only warn, do not block, for "possible" numbers)

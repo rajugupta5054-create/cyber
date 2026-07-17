@@ -132,8 +132,8 @@ def index():
 def phone_metadata():
     data = json_body()
     phone = data.get("phone") if data else None
-    if not isinstance(phone, str):
-        return jsonify(error="Enter a phone number in international format, for example +14155552671."), 400
+    if not isinstance(phone, str) or not phone.strip():
+        return jsonify(error="Please enter a phone number, e.g. 8248389588 or +91 98765 43210."), 400
 
     try:
         return jsonify(lookup_phone_metadata(phone))
