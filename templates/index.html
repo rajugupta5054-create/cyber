@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GeoTrace – Defensive Security Awareness Tool</title>
+  <meta name="description" content="A cybersecurity education demo showing what data websites can capture about your browser and location, and how to protect yourself.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">🛡️</span>
+        <span class="logo-text">GeoTrace</span>
+        <span class="logo-badge">Security Awareness</span>
+      </div>
+      <nav class="header-nav">
+        <a href="#demo" class="nav-link">Live Demo</a>
+        <a href="#phone" class="nav-link">Phone Lookup</a>
+        <a href="#protect" class="nav-link">Protect Yourself</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- Hero -->
+    <section class="hero-section">
+      <div class="hero-bg"></div>
+      <div class="container">
+        <div class="hero-content">
+          <div class="hero-tag">
+            <span class="pulse-dot"></span>
+            Cybersecurity Education Project
+          </div>
+          <h1 class="hero-title">What Can a Website<br><span class="gradient-text">Know About You?</span></h1>
+          <p class="hero-sub">This tool demonstrates exactly what data your browser exposes when you visit any website — your IP address, device fingerprint, and optionally your GPS location. Understanding the attack is the first step to defending against it.</p>
+          <div class="hero-cta">
+            <a href="#demo" class="btn btn-primary">▶ Run the Demo</a>
+            <a href="#protect" class="btn btn-ghost">How to Protect Myself →</a>
+          </div>
+        </div>
+        <div class="threat-cards">
+          <div class="threat-card" id="tc-ip">
+            <span class="tc-icon">🌐</span>
+            <span class="tc-label">IP Address</span>
+            <span class="tc-value" id="display-ip">Scanning...</span>
+          </div>
+          <div class="threat-card" id="tc-browser">
+            <span class="tc-icon">🖥️</span>
+            <span class="tc-label">Browser / OS</span>
+            <span class="tc-value" id="display-browser">Scanning...</span>
+          </div>
+          <div class="threat-card" id="tc-lang">
+            <span class="tc-icon">🗣️</span>
+            <span class="tc-label">Language</span>
+            <span class="tc-value" id="display-lang">Scanning...</span>
+          </div>
+          <div class="threat-card" id="tc-tz">
+            <span class="tc-icon">🕐</span>
+            <span class="tc-label">Timezone</span>
+            <span class="tc-value" id="display-tz">Scanning...</span>
+          </div>
+          <div class="threat-card" id="tc-screen">
+            <span class="tc-icon">📐</span>
+            <span class="tc-label">Screen Resolution</span>
+            <span class="tc-value" id="display-screen">Scanning...</span>
+          </div>
+          <div class="threat-card" id="tc-gps">
+            <span class="tc-icon">📍</span>
+            <span class="tc-label">GPS Location</span>
+            <span class="tc-value" id="display-gps">Not shared yet</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Explanation Banner -->
+    <section class="explain-section">
+      <div class="container">
+        <div class="explain-grid">
+          <div class="explain-item">
+            <div class="explain-icon">⚡</div>
+            <div>
+              <h3>Passive Collection</h3>
+              <p>IP address, browser type, OS, screen size and timezone are captured <strong>automatically</strong> — no permission needed.</p>
+            </div>
+          </div>
+          <div class="explain-item">
+            <div class="explain-icon">🔔</div>
+            <div>
+              <h3>Active Permission</h3>
+              <p>Precise GPS location requires the browser to show a <strong>permission prompt</strong>. You must click "Allow".</p>
+            </div>
+          </div>
+          <div class="explain-item">
+            <div class="explain-icon">📵</div>
+            <div>
+              <h3>Phone Numbers Cannot Be Located</h3>
+              <p>A phone number only reveals the <strong>SIM registration country</strong> — never the live device location.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Live Location Demo -->
+    <section class="section" id="demo">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">Interactive Demo</span>
+          <h2>Consent-Based Live Location Share</h2>
+          <p>This demo replicates exactly what a tracking link does. Read each step to understand the mechanics.</p>
+        </div>
+
+        <div class="demo-layout">
+          <div class="demo-controls">
+
+            <!-- Step 1 -->
+            <div class="step-card" id="step-1">
+              <div class="step-num">01</div>
+              <div class="step-body">
+                <h3>How the Attack Works</h3>
+                <p>An attacker sends you a link disguised as:</p>
+                <ul class="attack-list">
+                  <li>📦 A parcel delivery notification</li>
+                  <li>🏦 A bank verification page</li>
+                  <li>🎁 A prize claim form</li>
+                  <li>🔗 A shortened URL from a stranger</li>
+                </ul>
+                <div class="warning-box">
+                  <strong>⚠️ When you visit the link</strong>, your IP, browser, and timezone are captured <em>instantly</em>. If you click "Allow" on the location prompt, your GPS coordinates are sent too.
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 2: Consent -->
+            <div class="step-card" id="step-2">
+              <div class="step-num">02</div>
+              <div class="step-body">
+                <h3>Your Consent Controls</h3>
+                <p>This demo only collects your location with your explicit permission — exactly as responsible apps should work.</p>
+                <label class="consent-toggle" for="consent">
+                  <input id="consent" type="checkbox">
+                  <span>I understand this is a demonstration and I am sharing my own location voluntarily.</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Step 3: Share -->
+            <div class="step-card" id="step-3">
+              <div class="step-num">03</div>
+              <div class="step-body">
+                <h3>Start the Live Demo</h3>
+                <p>Click Start to simulate what happens when someone clicks a tracking link and grants location access.</p>
+                <div class="button-row">
+                  <button id="start-sharing" class="btn btn-primary" type="button">▶ Start Sharing</button>
+                  <button id="stop-sharing" class="btn btn-danger" type="button" disabled>⏹ Stop & Revoke</button>
+                </div>
+                <p id="location-status" class="status-msg" role="status" aria-live="polite">Location sharing is off.</p>
+
+                <div id="share-result" class="share-box" hidden>
+                  <p class="share-label">🔗 Shareable Link (simulates attacker's link)</p>
+                  <div class="copy-row">
+                    <input id="share-url" type="url" readonly aria-label="Location share link">
+                    <button id="copy-link" class="btn btn-outline" type="button">Copy</button>
+                  </div>
+                  <p id="expires-at" class="muted-text"></p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Live Map -->
+          <div class="map-panel">
+            <div class="map-header">
+              <span class="map-title">📡 Live Location Map</span>
+              <span class="map-status" id="map-badge">Waiting...</span>
+            </div>
+            <div id="map" class="live-map" aria-label="Live location map"></div>
+            <div class="map-footer">
+              <p id="coord-display" class="coord-text">No coordinates yet</p>
+              <p class="map-note">⚡ Updates every 15 seconds while sharing is active</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Phone Metadata -->
+    <section class="section section-dark" id="phone">
+      <div class="container">
+        <div class="section-header light">
+          <span class="section-tag-light">Phone Number Analysis</span>
+          <h2>What a Phone Number Actually Reveals</h2>
+          <p>Enter any phone number to see the publicly available numbering-plan data. Notice what is <strong>missing</strong> — no GPS, no address, no live location.</p>
+        </div>
+
+        <div class="phone-demo-layout">
+          <div class="phone-form-card">
+            <form id="phone-form" novalidate>
+              <label class="form-label" for="phone">Phone number (international format)</label>
+              <div class="input-row">
+                <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel"
+                       placeholder="+91 98765 43210" maxlength="40" required class="text-input">
+                <button class="btn btn-primary" type="submit" id="phone-submit-btn">Analyse</button>
+              </div>
+            </form>
+            <p id="phone-status" class="status-msg" role="status" aria-live="polite"></p>
+            <dl id="phone-result" class="metadata-grid" hidden></dl>
+          </div>
+
+          <div class="phone-explain-card">
+            <h3>🔍 Why This Matters</h3>
+            <div class="explain-points">
+              <div class="ep">
+                <span class="ep-check">✅</span>
+                <span>Country code reveals the registered country</span>
+              </div>
+              <div class="ep">
+                <span class="ep-check">✅</span>
+                <span>Carrier name is publicly linked to the prefix</span>
+              </div>
+              <div class="ep">
+                <span class="ep-check">✅</span>
+                <span>Number type (mobile/landline) is in the numbering plan</span>
+              </div>
+              <div class="ep ep-no">
+                <span class="ep-cross">❌</span>
+                <span>Live GPS location — <strong>impossible to retrieve</strong></span>
+              </div>
+              <div class="ep ep-no">
+                <span class="ep-cross">❌</span>
+                <span>Current city or street — <strong>not available</strong></span>
+              </div>
+              <div class="ep ep-no">
+                <span class="ep-cross">❌</span>
+                <span>Cell tower data — <strong>telecom-only, requires warrant</strong></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Protect Yourself -->
+    <section class="section" id="protect">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">Defence Guide</span>
+          <h2>How to Protect Yourself</h2>
+          <p>Simple, actionable steps anyone can take to prevent location tracking.</p>
+        </div>
+
+        <div class="protect-grid">
+          <div class="protect-card">
+            <div class="protect-icon">🔗</div>
+            <h3>Never Click Suspicious Links</h3>
+            <p>Hover over any link to see the real URL before clicking. If it's a short link (bit.ly, tinyurl), expand it first using a service like <strong>checkshorturl.com</strong>.</p>
+          </div>
+          <div class="protect-card">
+            <div class="protect-icon">🚫</div>
+            <h3>Deny Location to Unknown Sites</h3>
+            <p>When an unfamiliar website asks for your location, always click <strong>Block</strong> or <strong>Never Allow</strong>. Legitimate services explain why they need it first.</p>
+          </div>
+          <div class="protect-card">
+            <div class="protect-icon">🌐</div>
+            <h3>Use a VPN</h3>
+            <p>A VPN masks your real IP address, preventing passive IP-based geolocation. Your approximate city is derived from your IP without you knowing.</p>
+          </div>
+          <div class="protect-card">
+            <div class="protect-icon">🕵️</div>
+            <h3>Use Private Browsing</h3>
+            <p>Private/Incognito mode prevents tracking cookies from persisting. Combine with a browser like <strong>Firefox</strong> for enhanced fingerprint resistance.</p>
+          </div>
+          <div class="protect-card">
+            <div class="protect-icon">📱</div>
+            <h3>Review App Permissions</h3>
+            <p>Go to your phone's Settings → App Permissions and revoke location access from apps that don't genuinely need it.</p>
+          </div>
+          <div class="protect-card">
+            <div class="protect-icon">🔒</div>
+            <h3>Enable HTTPS Only Mode</h3>
+            <p>Browsers like Firefox have an HTTPS-Only Mode. Geolocation APIs are blocked on non-HTTPS pages, reducing risk.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>🛡️ <strong>GeoTrace</strong> — Cybersecurity Education Project &nbsp;|&nbsp; For educational and defensive security awareness only.</p>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</body>
+</html>

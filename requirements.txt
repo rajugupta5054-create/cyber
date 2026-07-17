@@ -1,0 +1,2 @@
+Flask>=3.0,<4.0
+phonenumbers>=8.13,<10.0

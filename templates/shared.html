@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Live Shared Location | GeoTrace</title>
+  <meta name="description" content="View a real-time shared location on the map — consent-based geolocation demo.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body class="shared-page" data-share-id="{{ share_id }}">
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">🛡️</span>
+        <span class="logo-text">GeoTrace</span>
+        <span class="logo-badge">Live Share</span>
+      </div>
+      <a href="/" class="btn btn-ghost btn-sm">← Back to Dashboard</a>
+    </div>
+  </header>
+
+  <main class="shared-main">
+    <div class="shared-header-bar">
+      <div class="container">
+        <div class="shared-meta">
+          <div>
+            <h1>📡 Live Location Feed</h1>
+            <p class="muted-text">This page auto-refreshes every 10 seconds. The sharer can revoke access at any time.</p>
+          </div>
+          <div class="live-badge-wrap">
+            <span class="live-badge" id="live-badge">⏳ Connecting...</span>
+          </div>
+        </div>
+        <p id="shared-status" class="status-msg" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+
+    <div class="shared-body">
+      <div id="map" class="shared-map" aria-label="Shared live location map"></div>
+      <div class="shared-info container">
+        <div class="info-card">
+          <span class="info-label">📍 Coordinates</span>
+          <span class="info-value" id="coord-display">—</span>
+        </div>
+        <div class="info-card">
+          <span class="info-label">🎯 Accuracy</span>
+          <span class="info-value" id="accuracy-display">—</span>
+        </div>
+        <div class="info-card">
+          <span class="info-label">🕐 Last Updated</span>
+          <span class="info-value" id="updated-display">—</span>
+        </div>
+        <div class="info-card">
+          <span class="info-label">⏰ Expires At</span>
+          <span class="info-value" id="expires-display">—</span>
+        </div>
+      </div>
+
+      <div class="container">
+        <div class="shared-notice">
+          <strong>🛡️ Educational Notice:</strong> This page demonstrates how a real-time location share works. In a malicious context, the sharer may not have consented. Always verify the source of any link before clicking "Allow" on a location prompt.
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="{{ url_for('static', filename='shared.js') }}" defer></script>
+</body>
+</html>
