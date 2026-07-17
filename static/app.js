@@ -245,8 +245,10 @@ async function copyLink() {
 /* ── Phone metadata ─────────────────────────────────────── */
 function renderMetadata(meta) {
   const fields = [
-    ['Valid',                 meta.valid ? '✅ Yes' : '❌ No'],
-    ['Formatted Number',      meta.formatted_number],
+    ['Valid',                 meta.valid ? '✅ Yes' : '⚠️ Possibly valid'],
+    ['International Format',  meta.formatted_number],
+    ['E.164 Format',          meta.e164],
+    ['National Format',       meta.national_format],
     ['Country / Region',      meta.country_or_region],
     ['Country Code',          meta.country_code ? `+${meta.country_code}` : null],
     ['Number Type',           meta.number_type],
