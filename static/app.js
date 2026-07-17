@@ -246,12 +246,13 @@ async function copyLink() {
 function renderMetadata(meta) {
   const fields = [
     ['Valid',                 meta.valid ? '✅ Yes' : '❌ No'],
-    ['Country / Region',     meta.country_or_region],
-    ['Country Code',         meta.country_code ? `+${meta.country_code}` : null],
-    ['Number Type',          meta.number_type],
-    ['Geographic Area',      meta.geographic_description],
-    ['Carrier',              meta.carrier],
-    ['⚠️ Important Notice', meta.notice],
+    ['Formatted Number',      meta.formatted_number],
+    ['Country / Region',      meta.country_or_region],
+    ['Country Code',          meta.country_code ? `+${meta.country_code}` : null],
+    ['Number Type',           meta.number_type],
+    ['Geographic Area',       meta.geographic_description],
+    ['Carrier',               meta.carrier],
+    ['⚠️ Important Notice',  meta.notice],
   ];
   el.phoneResult.replaceChildren();
   fields.forEach(([label, value]) => {
