@@ -19,7 +19,12 @@ from phone_metadata import PhoneMetadataError, lookup_phone_metadata
 
 
 BASE_DIR = Path(__file__).resolve().parent
-INSTANCE_DIR = BASE_DIR / "instance"
+
+# On Render, use the mounted persistent disk so the DB survives redeploys.
+# Locally fall back to instance/ inside the project folder.
+_RENDER_DISK = Path("/opt/render/project/src/instance")
+INSTANCE_DIR = _RENDER_DISK if _RENDER_DISK.exists() else BASE_DIR / "instance"
+
 DATABASE_PATH = INSTANCE_DIR / "location_shares.db"
 SHARE_LIFETIME = timedelta(minutes=60)
 
@@ -109,9 +114,10 @@ def add_security_headers(response):
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         "script-src 'self' https://unpkg.com; "
-        "style-src 'self' 'unsafe-inline' https://unpkg.com; "
+        "style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
         "img-src 'self' data: https://*.tile.openstreetmap.org; "
-        "connect-src 'self'; "
+        "connect-src 'self' https://api.ipify.org; "
         "frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
     )
     return response
