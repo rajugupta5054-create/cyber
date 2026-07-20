@@ -16,7 +16,11 @@ from typing import Any
 from flask import Flask, jsonify, render_template, request, url_for, send_from_directory, send_file
 
 from phone_metadata import PhoneMetadataError, lookup_phone_metadata
-from topics import TOPIC_DATA
+
+try:
+    from topics import TOPIC_DATA
+except ImportError:
+    TOPIC_DATA = {}
 
 
 try:
@@ -365,8 +369,4 @@ initialise_database()
 if __name__ == "__main__":
     # Browsers require HTTPS for geolocation outside localhost. Deploy behind
     # an HTTPS reverse proxy for demonstrations on other devices.
-    from waitress import serve
-    print(" * Serving Flask app 'app' with waitress")
-    print(" * Running on http://127.0.0.1:5000")
-    print("Press CTRL+C to quit")
-    serve(app, host="127.0.0.1", port=5000)
+    app.run(host="127.0.0.1", port=5000, debug=False)
