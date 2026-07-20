@@ -135,23 +135,23 @@ def add_security_headers(response):
     return response
 
 
-# Path to the built React SPA
-REACT_BUILD_DIR = BASE_DIR / "static" / "geotrace-ui"
+# Path to frontend folder (separate from Flask templates)
+FRONTEND_DIR = BASE_DIR / "frontend"
 
 
 @app.route("/")
 def index():
-    """Serve the React SPA if built, otherwise fall back to the old template."""
-    react_index = REACT_BUILD_DIR / "index.html"
-    if react_index.exists():
-        return send_file(react_index)
-    return render_template("index.html")
+    """Serve the new focused PhoneTrace frontend."""
+    frontend_index = FRONTEND_DIR / "index.html"
+    if frontend_index.exists():
+        return send_file(frontend_index)
+    return render_template("index.html")  # legacy fallback
 
 
-@app.route("/assets/<path:filename>")
-def react_assets(filename: str):
-    """Serve Vite-built JS/CSS assets."""
-    return send_from_directory(REACT_BUILD_DIR / "assets", filename)
+@app.route("/frontend/<path:filename>")
+def frontend_static(filename: str):
+    """Serve frontend CSS, JS and other static assets."""
+    return send_from_directory(FRONTEND_DIR, filename)
 
 
 @app.route("/favicon.ico")

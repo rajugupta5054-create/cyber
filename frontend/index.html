@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PhoneTrace – Phone Number Intelligence</title>
+  <meta name="description" content="Look up detailed phone number information: carrier, location, timezone, telecom circle, Truecaller name and more.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/frontend/style.css">
+</head>
+<body>
+
+  <!-- ── Header ─────────────────────────────────────────── -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">📞</span>
+        <span class="logo-text">PhoneTrace</span>
+        <span class="logo-badge">Intelligence</span>
+      </div>
+      <div class="header-right">
+        <span id="tc-header-badge" class="tc-mini-badge tc-off">Truecaller: Off</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-layout">
+
+    <!-- ── LEFT: Truecaller Setup + Lookup Form ─────────── -->
+    <aside class="sidebar">
+
+      <!-- Truecaller Card -->
+      <div class="card" id="tc-card">
+        <div class="card-header">
+          <span class="card-title">🔐 Truecaller Setup</span>
+          <span id="tc-status-badge" class="tc-badge tc-badge-off">Not Connected</span>
+        </div>
+        <p class="card-desc">Connect once to auto-fetch caller names for any number.</p>
+
+        <div id="tc-login-step" class="tc-step">
+          <label class="form-label" for="tc-phone">Your phone number</label>
+          <div class="input-row">
+            <input id="tc-phone" type="text" inputmode="tel" placeholder="+91 9876543210" maxlength="20" class="text-input">
+            <button id="tc-send-otp-btn" class="btn btn-outline" type="button">Send OTP</button>
+          </div>
+          <p id="tc-login-status" class="status-msg" role="status" aria-live="polite"></p>
+        </div>
+
+        <div id="tc-otp-step" class="tc-step" hidden>
+          <label class="form-label" for="tc-otp">Enter OTP from your phone</label>
+          <div class="input-row">
+            <input id="tc-otp" type="text" inputmode="numeric" placeholder="123456" maxlength="8" class="text-input">
+            <button id="tc-verify-otp-btn" class="btn btn-primary" type="button">Verify</button>
+          </div>
+          <p id="tc-otp-status" class="status-msg" role="status" aria-live="polite"></p>
+        </div>
+
+        <div id="tc-connected-state" hidden>
+          <p class="tc-connected-msg">✅ Active — names will be fetched automatically.</p>
+          <button id="tc-logout-btn" class="btn-tiny-danger" type="button">Disconnect</button>
+        </div>
+      </div>
+
+      <!-- Tracked Contacts -->
+      <div class="card" id="contacts-panel" hidden>
+        <div class="card-header">
+          <span class="card-title">📋 Saved Contacts</span>
+          <button id="clear-contacts-btn" class="btn-tiny-danger" type="button">Clear All</button>
+        </div>
+        <div id="contacts-list" class="contacts-list"></div>
+      </div>
+
+    </aside>
+
+    <!-- ── CENTER: Main Lookup ───────────────────────────── -->
+    <section class="lookup-section">
+
+      <div class="lookup-hero">
+        <h1>Phone Number <span class="gradient-text">Intelligence</span></h1>
+        <p>Enter any phone number to reveal carrier, location, timezone, telecom circle, and more.</p>
+      </div>
+
+      <div class="card lookup-card">
+        <form id="phone-form" novalidate>
+          <label class="form-label" for="phone">Phone number — any format</label>
+          <div class="input-row input-row-lg">
+            <input id="phone" name="phone" type="text" inputmode="tel" autocomplete="tel"
+                   placeholder="e.g. 8248389588 or +91 98765 43210" maxlength="50" required class="text-input text-input-lg">
+            <button class="btn btn-primary btn-lg" type="submit" id="phone-submit-btn">
+              <span id="btn-text">🔍 Analyse</span>
+            </button>
+          </div>
+        </form>
+        <p id="phone-status" class="status-msg" role="status" aria-live="polite"></p>
+      </div>
+
+      <!-- Results -->
+      <div id="result-container" class="result-container" hidden>
+
+        <!-- Name hero banner -->
+        <div id="name-banner" class="name-banner" hidden>
+          <div class="name-avatar" id="name-avatar">?</div>
+          <div class="name-info">
+            <div class="name-main" id="name-main">—</div>
+            <div class="name-source" id="name-source"></div>
+          </div>
+        </div>
+
+        <!-- Save name panel -->
+        <div id="save-name-panel" class="save-panel" hidden>
+          <p class="save-panel-label">💾 Save a name for this number?</p>
+          <div class="input-row">
+            <input id="save-name-input" type="text" placeholder="Enter name…" maxlength="80" class="text-input">
+            <button id="save-name-btn" class="btn btn-outline" type="button">Save</button>
+          </div>
+        </div>
+
+        <!-- Detail cards grid -->
+        <div class="detail-grid" id="detail-grid"></div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <script src="/frontend/main.js" defer></script>
+</body>
+</html>
