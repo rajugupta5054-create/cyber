@@ -328,6 +328,32 @@ body { background: var(--bg); color: var(--text); min-width: 320px; line-height:
   font-size: .85rem; color: var(--text-muted);
 }
 
+/* ── Metadata section headings ──────────────────────────── */
+.meta-section-heading {
+  grid-column: 1 / -1;
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  padding: 10px 0 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
+}
+.meta-section-heading:first-child { padding-top: 0; }
+
+/* ── Result badges ───────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 12px;
+  font-size: .75rem;
+  font-weight: 600;
+}
+.badge-yes  { background: rgba(34,197,75,.15);  color: #22c54b; border: 1px solid #22c54b44; }
+.badge-no   { background: rgba(239,68,68,.1);   color: #ef4444; border: 1px solid #ef444440; }
+.badge-flag { background: var(--accent-dim);    color: var(--accent); border: 1px solid #1e3a6e; margin: 2px 2px 2px 0; }
+
 /* ── Truecaller Card ────────────────────────────────────── */
 .tc-header {
   display: flex;

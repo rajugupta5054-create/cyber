@@ -329,29 +329,32 @@ function renderMetadata(meta, name) {
 
   // Truecaller name takes priority over local saved name
   const displayName = meta.truecaller_name || name || null;
-  const nameSource  = meta.truecaller_name ? '\ud83d\udcde Truecaller' : (name ? '\ud83d\udcbe Saved' : null);
+  const nameSource  = meta.truecaller_name ? '📞 Truecaller' : (name ? '💾 Saved' : null);
 
-  const fields = [
-    ['\ud83d\udc64 Name',             displayName ? `${displayName}${nameSource ? '  (' + nameSource + ')' : ''}` : null],
-    ['\u2705 Valid',                 meta.valid ? 'Yes' : 'Possibly valid'],
-    ['\ud83d\udcf1 International',   meta.formatted_number],
-    ['E.164',                        meta.e164],
-    ['National Format',              meta.national_format],
-    ['\ud83c\udf0d Country / Region',meta.country_or_region],
-    ['Country Code',                 meta.country_code ? `+${meta.country_code}` : null],
-    ['Number Type',                  meta.number_type],
-    ['\ud83d\udccd Geographic Area', meta.geographic_description],
-    ['\ud83d\udcf6 Carrier',         meta.carrier],
-    ['\u26a0\ufe0f Notice',          meta.notice],
-  ];
   el.phoneResult.replaceChildren();
-  fields.forEach(([label, value]) => {
-    if (!value) return;
+
+  // ── helper to add a section heading ──────────────────────
+  function addSection(title) {
+    const h = document.createElement('div');
+    h.className = 'meta-section-heading';
+    h.textContent = title;
+    el.phoneResult.appendChild(h);
+  }
+
+  // ── helper to add a row ───────────────────────────────────
+  function addRow(label, value, highlight = false) {
+    if (value === null || value === undefined || value === '') return;
     const dt = document.createElement('dt');
     const dd = document.createElement('dd');
     dt.textContent = label;
-    dd.textContent = value;
-    if (label.includes('Name')) {
+    if (typeof value === 'boolean') {
+      dd.innerHTML = value
+        ? '<span class="badge badge-yes">✓ Yes</span>'
+        : '<span class="badge badge-no">✗ No</span>';
+    } else {
+      dd.textContent = value;
+    }
+    if (highlight) {
       dt.style.color = 'var(--accent)';
       dd.style.fontWeight = '700';
       dd.style.fontSize = '1.1em';

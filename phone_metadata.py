@@ -193,6 +193,7 @@ def lookup_phone_metadata(raw_phone: str) -> dict[str, str | bool | int | None]:
 
     # Final validity check (only warn, do not block, for "possible" numbers)
     is_valid = phonenumbers.is_valid_number(number)
+    is_possible = phonenumbers.is_possible_number(number)
 
     number_type = phonenumbers.number_type(number)
     type_name = (
@@ -210,16 +211,122 @@ def lookup_phone_metadata(raw_phone: str) -> dict[str, str | bool | int | None]:
     formatted_national = phonenumbers.format_number(
         number, phonenumbers.PhoneNumberFormat.NATIONAL
     )
+    formatted_rfc3966 = phonenumbers.format_number(
+        number, phonenumbers.PhoneNumberFormat.RFC3966
+    )
+
+    # Timezones
+    try:
+        from phonenumbers import timezone as tz_mod
+        timezones = tz_mod.time_zones_for_number(number)
+        timezone_str = ", ".join(timezones) if timezones else None
+    except Exception:
+        timezone_str = None
+
+    # Country / region
+    region_code = geocoder.region_code_for_number(number) or None
+    geo_desc = geocoder.description_for_number(number, "en") or None
+    carrier_name = carrier.name_for_number(number, "en") or None
+
+    # Carrier in local language (Hindi for India)
+    carrier_local = None
+    if region_code == "IN":
+        try:
+            carrier_local = carrier.name_for_number(number, "hi") or None
+        except Exception:
+            pass
+
+    # Number flags
+    is_mobile = number_type in (
+        phonenumbers.PhoneNumberType.MOBILE,
+        phonenumbers.PhoneNumberType.FIXED_LINE_OR_MOBILE,
+    )
+    is_landline = number_type == phonenumbers.PhoneNumberType.FIXED_LINE
+    is_tollfree = number_type == phonenumbers.PhoneNumberType.TOLL_FREE
+    is_premium  = number_type == phonenumbers.PhoneNumberType.PREMIUM_RATE
+    is_voip     = number_type == phonenumbers.PhoneNumberType.VOIP
+
+    # National significant number & prefix
+    nsn = phonenumbers.national_significant_number(number)
+    prefix_4 = nsn[:4] if len(nsn) >= 4 else nsn
+
+    # Indian telecom circle lookup (based on first 4 digits of 10-digit number)
+    india_circle = None
+    if region_code == "IN" and len(nsn) == 10:
+        india_circle = _india_circle(nsn)
 
     return {
-        "valid": is_valid,
-        "formatted_number": formatted_international,
-        "e164": formatted_e164,
-        "national_format": formatted_national,
-        "country_code": number.country_code,
-        "country_or_region": geocoder.region_code_for_number(number) or None,
-        "number_type": type_name,
-        "geographic_description": geocoder.description_for_number(number, "en") or None,
-        "carrier": carrier.name_for_number(number, "en") or None,
-        "notice": "This is public numbering-plan metadata, not live device location.",
+        # ── Validity ──────────────────────────────────────────
+        "valid":           is_valid,
+        "is_possible":     is_possible,
+
+        # ── Formats ───────────────────────────────────────────
+        "formatted_number":  formatted_international,
+        "e164":              formatted_e164,
+        "national_format":   formatted_national,
+        "rfc3966":           formatted_rfc3966,
+
+        # ── Number structure ──────────────────────────────────
+        "country_code":              number.country_code,
+        "national_significant_number": nsn,
+        "number_prefix":             prefix_4,
+        "extension":                 number.extension or None,
+
+        # ── Geography ─────────────────────────────────────────
+        "country_or_region":      region_code,
+        "geographic_description": geo_desc,
+        "timezone":               timezone_str,
+        "india_telecom_circle":   india_circle,
+
+        # ── Line type ─────────────────────────────────────────
+        "number_type":  type_name,
+        "is_mobile":    is_mobile,
+        "is_landline":  is_landline,
+        "is_tollfree":  is_tollfree,
+        "is_premium":   is_premium,
+        "is_voip":      is_voip,
+
+        # ── Carrier ───────────────────────────────────────────
+        "carrier":       carrier_name,
+        "carrier_local": carrier_local,
+
+        # ── Notice ────────────────────────────────────────────
+        "notice": "Public numbering-plan metadata only — not live device location.",
     }
+
+
+# ── Indian telecom circle table ───────────────────────────────────────────────
+_INDIA_CIRCLES: dict[str, str] = {
+    # Jio prefixes (98xx, 70xx, 71xx, 72xx, 73xx, 79xx, 62xx, 63xx, 64xx, 65xx)
+    # We map by first-2 digits for broad coverage, refined by 4-digit where known
+    "9400": "Kerala", "9447": "Kerala", "9446": "Kerala",
+    "9448": "Karnataka", "9449": "Karnataka", "9880": "Karnataka",
+    "9884": "Tamil Nadu", "9940": "Tamil Nadu", "9841": "Tamil Nadu",
+    "9820": "Mumbai", "9821": "Mumbai", "9819": "Mumbai",
+    "9810": "Delhi", "9811": "Delhi", "9818": "Delhi",
+    "9830": "West Bengal", "9831": "West Bengal",
+    "9850": "Maharashtra", "9890": "Maharashtra",
+    "9860": "Maharashtra", "9970": "Maharashtra",
+    "9413": "Rajasthan", "9414": "Rajasthan",
+    "9415": "Uttar Pradesh (E)", "9839": "Uttar Pradesh (E)",
+    "9918": "Uttar Pradesh (W)", "9412": "Uttar Pradesh (W)",
+    "9876": "Punjab", "9779": "Punjab",
+    "9878": "Punjab", "9872": "Punjab",
+    "9426": "Gujarat", "9824": "Gujarat", "9974": "Gujarat",
+    "9437": "Odisha", "9438": "Odisha",
+    "9434": "North East", "9435": "Assam",
+    "9431": "Bihar", "9430": "Bihar",
+    "9334": "Bihar", "9308": "Bihar",
+    "9471": "Jharkhand", "9431": "Bihar",
+    "9868": "Delhi", "9999": "Delhi",
+    "9891": "Delhi", "8800": "Delhi",
+    "9500": "Tamil Nadu", "9600": "Tamil Nadu",
+}
+
+def _india_circle(nsn: str) -> str | None:
+    """Best-effort Indian telecom circle from national significant number."""
+    return (
+        _INDIA_CIRCLES.get(nsn[:4])
+        or _INDIA_CIRCLES.get(nsn[:3])
+        or None
+    )
