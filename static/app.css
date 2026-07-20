@@ -328,6 +328,27 @@ body { background: var(--bg); color: var(--text); min-width: 320px; line-height:
   font-size: .85rem; color: var(--text-muted);
 }
 
+/* ── Truecaller Card ────────────────────────────────────── */
+.tc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.tc-logo { font-weight: 700; font-size: .95rem; color: #fff; }
+.tc-badge {
+  font-size: .72rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  letter-spacing: .03em;
+}
+.tc-badge-on  { background: rgba(34,197,75,.15); color: #22c54b; border: 1px solid #22c54b55; }
+.tc-badge-off { background: rgba(239,68,68,.1);  color: var(--danger); border: 1px solid #ef444440; }
+.tc-desc { font-size: .82rem; color: var(--text-muted); margin-bottom: 14px; }
+.tc-step { margin-top: 8px; }
+.tc-connected-msg { font-size: .88rem; color: #22c54b; margin-bottom: 10px; }
+
 /* ── Save Name Panel ────────────────────────────────────── */
 .save-name-panel {
   margin-top: 16px;

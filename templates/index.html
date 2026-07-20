@@ -204,6 +204,42 @@
         </div>
 
         <div class="phone-demo-layout">
+
+          <!-- Truecaller Setup Card -->
+          <div class="phone-form-card" id="tc-setup-card">
+            <div class="tc-header">
+              <span class="tc-logo">📞 Truecaller Integration</span>
+              <span id="tc-status-badge" class="tc-badge tc-badge-off">Not Connected</span>
+            </div>
+            <p class="tc-desc">Connect your Truecaller account once to automatically fetch caller names for any phone number.</p>
+
+            <!-- Step 1: Enter YOUR phone number -->
+            <div id="tc-login-step" class="tc-step">
+              <label class="form-label" for="tc-phone">Your phone number (to receive OTP)</label>
+              <div class="input-row">
+                <input id="tc-phone" type="text" inputmode="tel" placeholder="+91 9876543210" maxlength="20" class="text-input">
+                <button id="tc-send-otp-btn" class="btn btn-outline" type="button">Send OTP</button>
+              </div>
+              <p id="tc-login-status" class="status-msg" role="status" aria-live="polite"></p>
+            </div>
+
+            <!-- Step 2: Enter OTP (hidden until OTP sent) -->
+            <div id="tc-otp-step" class="tc-step" hidden>
+              <label class="form-label" for="tc-otp">Enter the OTP received on your phone</label>
+              <div class="input-row">
+                <input id="tc-otp" type="text" inputmode="numeric" placeholder="e.g. 123456" maxlength="8" class="text-input">
+                <button id="tc-verify-otp-btn" class="btn btn-primary" type="button">Verify & Connect</button>
+              </div>
+              <p id="tc-otp-status" class="status-msg" role="status" aria-live="polite"></p>
+            </div>
+
+            <!-- Connected state (shown when set up) -->
+            <div id="tc-connected-state" hidden>
+              <p class="tc-connected-msg">✅ Truecaller is active. Caller names will be fetched automatically.</p>
+              <button id="tc-logout-btn" class="btn-tiny-danger" type="button">Disconnect Truecaller</button>
+            </div>
+          </div>
+
           <div class="phone-form-card">
             <form id="phone-form" novalidate>
               <label class="form-label" for="phone">Phone number — Indian or international, any format</label>

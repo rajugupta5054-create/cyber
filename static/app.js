@@ -27,6 +27,19 @@ const el = {
   contactsList:    document.querySelector('#contacts-list'),
   clearContactsBtn:document.querySelector('#clear-contacts-btn'),
 
+  // Truecaller setup
+  tcStatusBadge:   document.querySelector('#tc-status-badge'),
+  tcLoginStep:     document.querySelector('#tc-login-step'),
+  tcOtpStep:       document.querySelector('#tc-otp-step'),
+  tcConnected:     document.querySelector('#tc-connected-state'),
+  tcPhone:         document.querySelector('#tc-phone'),
+  tcSendOtpBtn:    document.querySelector('#tc-send-otp-btn'),
+  tcOtp:           document.querySelector('#tc-otp'),
+  tcVerifyBtn:     document.querySelector('#tc-verify-otp-btn'),
+  tcLoginStatus:   document.querySelector('#tc-login-status'),
+  tcOtpStatus:     document.querySelector('#tc-otp-status'),
+  tcLogoutBtn:     document.querySelector('#tc-logout-btn'),
+
   // Threat card values
   displayIp:      document.querySelector('#display-ip'),
   displayBrowser: document.querySelector('#display-browser'),
@@ -313,8 +326,13 @@ let _lastE164 = null;
 
 function renderMetadata(meta, name) {
   _lastE164 = meta.e164 || null;
+
+  // Truecaller name takes priority over local saved name
+  const displayName = meta.truecaller_name || name || null;
+  const nameSource  = meta.truecaller_name ? '\ud83d\udcde Truecaller' : (name ? '\ud83d\udcbe Saved' : null);
+
   const fields = [
-    ['\ud83d\udc64 Name',             name ? name : null],
+    ['\ud83d\udc64 Name',             displayName ? `${displayName}${nameSource ? '  (' + nameSource + ')' : ''}` : null],
     ['\u2705 Valid',                 meta.valid ? 'Yes' : 'Possibly valid'],
     ['\ud83d\udcf1 International',   meta.formatted_number],
     ['E.164',                        meta.e164],
@@ -343,12 +361,11 @@ function renderMetadata(meta, name) {
   });
   el.phoneResult.hidden = false;
 
-  // Show save-name panel if name not already saved
+  // Show save-name panel only if no name found at all
   if (el.saveNamePanel && _lastE164) {
-    if (name) {
-      // Already has a name — pre-fill the input, hide the save panel
+    if (displayName) {
       el.saveNamePanel.hidden = true;
-      if (el.saveNameInput) el.saveNameInput.value = name;
+      if (el.saveNameInput) el.saveNameInput.value = displayName;
     } else {
       el.saveNamePanel.hidden = false;
       if (el.saveNameInput) el.saveNameInput.value = '';
@@ -406,7 +423,7 @@ if (el.phoneForm) {
       return;
     }
 
-    setPhoneStatus('Looking up public metadata\u2026');
+    setPhoneStatus('Looking up\u2026 (Truecaller name lookup may take a moment)');
     try {
       const meta = await apiRequest('/api/phone-metadata', {
         method: 'POST',
@@ -414,10 +431,94 @@ if (el.phoneForm) {
       });
       const savedName = getNameForNumber(meta.e164);
       renderMetadata(meta, savedName);
-      setPhoneStatus('\u2705 Metadata retrieved.' + (savedName ? ` Known contact: ${savedName}` : ' Save a name to track this number.'), 'success');
+      const nameFound = meta.truecaller_name || savedName;
+      if (meta.truecaller_name) {
+        setPhoneStatus(`\u2705 Name found via Truecaller: ${meta.truecaller_name}`, 'success');
+      } else if (savedName) {
+        setPhoneStatus(`\u2705 Metadata retrieved. Known contact: ${savedName}`, 'success');
+      } else if (meta.truecaller_active) {
+        setPhoneStatus('\u2705 Metadata retrieved. Truecaller returned no name for this number.', 'success');
+      } else {
+        setPhoneStatus('\u2705 Metadata retrieved. Connect Truecaller above to get the caller name automatically.', 'success');
+      }
     } catch (err) {
       setPhoneStatus(err.message, 'error');
     }
+  });
+}
+
+/* ── Truecaller Setup ───────────────────────────────────── */
+function setTcStatus(msg, kind, el_) {
+  if (!el_) return;
+  el_.textContent = msg;
+  el_.className = `status-msg ${kind}`;
+}
+
+async function loadTcStatus() {
+  try {
+    const s = await apiRequest('/api/truecaller/status', { method: 'GET' });
+    if (s.setup) {
+      showTcConnected();
+    } else {
+      showTcLogin();
+    }
+  } catch { showTcLogin(); }
+}
+
+function showTcConnected() {
+  if (el.tcStatusBadge) { el.tcStatusBadge.textContent = '✅ Connected'; el.tcStatusBadge.className = 'tc-badge tc-badge-on'; }
+  if (el.tcLoginStep)  el.tcLoginStep.hidden  = true;
+  if (el.tcOtpStep)   el.tcOtpStep.hidden    = true;
+  if (el.tcConnected) el.tcConnected.hidden  = false;
+}
+
+function showTcLogin() {
+  if (el.tcStatusBadge) { el.tcStatusBadge.textContent = 'Not Connected'; el.tcStatusBadge.className = 'tc-badge tc-badge-off'; }
+  if (el.tcLoginStep)  el.tcLoginStep.hidden  = false;
+  if (el.tcOtpStep)   el.tcOtpStep.hidden    = true;
+  if (el.tcConnected) el.tcConnected.hidden  = true;
+}
+
+if (el.tcSendOtpBtn) {
+  el.tcSendOtpBtn.addEventListener('click', async () => {
+    const phone = (el.tcPhone.value || '').trim();
+    if (!phone) { setTcStatus('Enter your phone number.', 'error', el.tcLoginStatus); return; }
+    el.tcSendOtpBtn.disabled = true;
+    setTcStatus('Sending OTP\u2026', '', el.tcLoginStatus);
+    try {
+      await apiRequest('/api/truecaller/login', { method: 'POST', body: JSON.stringify({ phone }) });
+      setTcStatus('\u2705 OTP sent! Check your phone.', 'success', el.tcLoginStatus);
+      el.tcLoginStep.hidden = true;
+      el.tcOtpStep.hidden   = false;
+      el.tcOtp.focus();
+    } catch (err) {
+      setTcStatus(err.message, 'error', el.tcLoginStatus);
+      el.tcSendOtpBtn.disabled = false;
+    }
+  });
+}
+
+if (el.tcVerifyBtn) {
+  el.tcVerifyBtn.addEventListener('click', async () => {
+    const otp = (el.tcOtp.value || '').trim();
+    if (!otp) { setTcStatus('Enter the OTP.', 'error', el.tcOtpStatus); return; }
+    el.tcVerifyBtn.disabled = true;
+    setTcStatus('Verifying\u2026', '', el.tcOtpStatus);
+    try {
+      await apiRequest('/api/truecaller/verify', { method: 'POST', body: JSON.stringify({ otp }) });
+      setTcStatus('\u2705 Connected!', 'success', el.tcOtpStatus);
+      setTimeout(showTcConnected, 800);
+    } catch (err) {
+      setTcStatus(err.message, 'error', el.tcOtpStatus);
+      el.tcVerifyBtn.disabled = false;
+    }
+  });
+}
+
+if (el.tcLogoutBtn) {
+  el.tcLogoutBtn.addEventListener('click', async () => {
+    await fetch('/api/truecaller/logout', { method: 'DELETE' });
+    showTcLogin();
   });
 }
 
@@ -425,3 +526,4 @@ if (el.phoneForm) {
 populatePassiveData();
 initMap();
 renderContactsList();
+loadTcStatus();
