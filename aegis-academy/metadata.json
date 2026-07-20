@@ -1,0 +1,6 @@
+{
+  "name": "Aegis Academy",
+  "description": "An elite cybersecurity education and training platform featuring live terminal packet scanners, geo-privacy browsers, and active operator tracking dashboards.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

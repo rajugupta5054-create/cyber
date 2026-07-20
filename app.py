@@ -13,9 +13,11 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-from flask import Flask, jsonify, render_template, request, url_for
+from flask import Flask, jsonify, render_template, request, url_for, send_from_directory, send_file
 
 from phone_metadata import PhoneMetadataError, lookup_phone_metadata
+from topics import TOPIC_DATA
+
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -113,19 +115,38 @@ def add_security_headers(response):
     response.headers["Permissions-Policy"] = "geolocation=(self)"
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' https://unpkg.com; "
+        "script-src 'self' 'unsafe-inline' https://unpkg.com; "
         "style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com; "
-        "img-src 'self' data: https://*.tile.openstreetmap.org; "
+        "img-src 'self' data: https://*.tile.openstreetmap.org https://lh3.googleusercontent.com; "
         "connect-src 'self' https://api.ipify.org; "
         "frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
     )
     return response
 
 
+# Path to the built React SPA
+REACT_BUILD_DIR = BASE_DIR / "static" / "geotrace-ui"
+
+
 @app.route("/")
 def index():
+    """Serve the React SPA if built, otherwise fall back to the old template."""
+    react_index = REACT_BUILD_DIR / "index.html"
+    if react_index.exists():
+        return send_file(react_index)
     return render_template("index.html")
+
+
+@app.route("/assets/<path:filename>")
+def react_assets(filename: str):
+    """Serve Vite-built JS/CSS assets."""
+    return send_from_directory(REACT_BUILD_DIR / "assets", filename)
+
+
+@app.route("/favicon.ico")
+def favicon():
+    return "", 204
 
 
 @app.post("/api/phone-metadata")
@@ -253,10 +274,22 @@ def shared_location(share_id: str):
     return render_template("shared.html", share_id=share_id)
 
 
+@app.route("/api/protect/<topic_id>")
+def get_topic(topic_id: str):
+    topic = TOPIC_DATA.get(topic_id)
+    if topic is None:
+        return jsonify(error="Topic not found"), 404
+    return jsonify(topic)
+
+
 initialise_database()
 
 
 if __name__ == "__main__":
     # Browsers require HTTPS for geolocation outside localhost. Deploy behind
     # an HTTPS reverse proxy for demonstrations on other devices.
-    app.run(host="127.0.0.1", port=5000, debug=False)
+    from waitress import serve
+    print(" * Serving Flask app 'app' with waitress")
+    print(" * Running on http://127.0.0.1:5000")
+    print("Press CTRL+C to quit")
+    serve(app, host="127.0.0.1", port=5000)

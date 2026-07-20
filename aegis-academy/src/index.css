@@ -1,0 +1,124 @@
+@import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  
+  --color-surface-container-lowest: #0b0e13;
+  --color-surface-container: #1d2025;
+  --color-surface-container-low: #191c21;
+  --color-surface-container-high: #272a30;
+  --color-surface-container-highest: #32353b;
+  --color-surface-dim: #101419;
+  --color-surface-bright: #36393f;
+  --color-surface: #101419;
+  --color-background: #101419;
+  --color-on-surface: #e1e2e9;
+  --color-on-surface-variant: #c1c7d3;
+  
+  --color-primary: #a4c9ff;
+  --color-on-primary: #00315d;
+  --color-primary-container: #60a5fa;
+  --color-on-primary-container: #003a6b;
+  
+  --color-secondary: #cebdff;
+  --color-on-secondary: #381385;
+  --color-secondary-container: #4f319c;
+  --color-on-secondary-container: #bea8ff;
+  
+  --color-tertiary: #fabd34;
+  --color-on-tertiary: #412d00;
+  --color-tertiary-container: #d19900;
+  --color-on-tertiary-container: #4b3500;
+  
+  --color-error: #ffb4ab;
+  --color-on-error: #690005;
+  --color-error-container: #93000a;
+  --color-on-error-container: #ffdad6;
+}
+
+body {
+  background-color: #0f172a;
+  color: #e1e2e9;
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+/* Custom styles for cybersecurity sentinel theme */
+.glass-panel {
+  background: rgba(16, 20, 25, 0.45);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card {
+  background: rgba(30, 41, 59, 0.4);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(164, 201, 255, 0.08);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  border-color: rgba(164, 201, 255, 0.35);
+  box-shadow: 0 0 25px rgba(164, 201, 255, 0.12);
+}
+
+.glow-text {
+  text-shadow: 0 0 20px rgba(164, 201, 255, 0.45);
+}
+
+.gradient-border {
+  position: relative;
+  border-radius: 0.75rem;
+  background: linear-gradient(#0f172a, #0f172a) padding-box,
+              linear-gradient(to right, #a4c9ff, #cebdff) border-box;
+  border: 1px solid transparent;
+}
+
+.scan-line {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #a4c9ff, transparent);
+  animation: scan 4s linear infinite;
+}
+
+@keyframes scan {
+  0% { transform: translateY(-20px); }
+  100% { transform: translateY(420px); }
+}
+
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.terminal-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 15px;
+  background-color: #a4c9ff;
+  animation: cursor-blink 1s step-end infinite;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(16, 20, 25, 0.3);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(164, 201, 255, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(164, 201, 255, 0.4);
+}
