@@ -18,6 +18,7 @@ const el = {
   coordDisplay: document.querySelector('#coord-display'),
   phoneForm:    document.querySelector('#phone-form'),
   phone:        document.querySelector('#phone'),
+  personName:   document.querySelector('#person-name'),
   phoneStatus:  document.querySelector('#phone-status'),
   phoneResult:  document.querySelector('#phone-result'),
 
@@ -243,9 +244,10 @@ async function copyLink() {
 }
 
 /* ── Phone metadata ─────────────────────────────────────── */
-function renderMetadata(meta) {
+function renderMetadata(meta, name) {
   const fields = [
-    ['Valid',                 meta.valid ? '✅ Yes' : '⚠️ Possibly valid'],
+    ['Name',                  name || null],
+    ['Valid',                 meta.valid ? '\u2705 Yes' : '\u26a0\ufe0f Possibly valid'],
     ['International Format',  meta.formatted_number],
     ['E.164 Format',          meta.e164],
     ['National Format',       meta.national_format],
@@ -254,14 +256,20 @@ function renderMetadata(meta) {
     ['Number Type',           meta.number_type],
     ['Geographic Area',       meta.geographic_description],
     ['Carrier',               meta.carrier],
-    ['⚠️ Important Notice',  meta.notice],
+    ['\u26a0\ufe0f Important Notice',  meta.notice],
   ];
   el.phoneResult.replaceChildren();
   fields.forEach(([label, value]) => {
+    if (label === 'Name' && !value) return; // skip if name not entered
     const dt = document.createElement('dt');
     const dd = document.createElement('dd');
     dt.textContent = label;
     dd.textContent = value || 'Not available';
+    if (label === 'Name') {
+      dt.style.color = 'var(--accent)';
+      dd.style.fontWeight = '600';
+      dd.style.fontSize = '1.05em';
+    }
     el.phoneResult.append(dt, dd);
   });
   el.phoneResult.hidden = false;
@@ -291,8 +299,9 @@ if (el.phoneForm) {
         method: 'POST',
         body: JSON.stringify({ phone: phoneValue }),
       });
-      renderMetadata(meta);
-      setPhoneStatus('✅ Metadata retrieved. The number was not stored.', 'success');
+      const enteredName = (el.personName ? el.personName.value : '').trim();
+      renderMetadata(meta, enteredName);
+      setPhoneStatus('\u2705 Metadata retrieved. The number was not stored.', 'success');
     } catch (err) {
       setPhoneStatus(err.message, 'error');
     }

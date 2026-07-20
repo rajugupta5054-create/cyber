@@ -206,6 +206,11 @@
         <div class="phone-demo-layout">
           <div class="phone-form-card">
             <form id="phone-form" novalidate>
+              <label class="form-label" for="person-name">Name (optional)</label>
+              <div class="input-row" style="margin-bottom: 10px;">
+                <input id="person-name" name="person-name" type="text" autocomplete="name"
+                       placeholder="e.g. Raju Gupta" maxlength="80" class="text-input">
+              </div>
               <label class="form-label" for="phone">Phone number — Indian or international, any format</label>
               <div class="input-row">
                 <input id="phone" name="phone" type="text" inputmode="tel" autocomplete="tel"
