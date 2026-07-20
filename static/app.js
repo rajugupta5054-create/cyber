@@ -276,11 +276,20 @@ if (el.phoneForm) {
   el.phoneForm.addEventListener('submit', async e => {
     e.preventDefault();
     el.phoneResult.hidden = true;
+
+    // Trim the value so leading/trailing whitespace never causes a false-empty send
+    const phoneValue = (el.phone.value || '').trim();
+    if (!phoneValue) {
+      setPhoneStatus('Please enter a phone number, e.g. 8248389588 or +91 98765 43210.', 'error');
+      el.phone.focus();
+      return;
+    }
+
     setPhoneStatus('Looking up public metadata…');
     try {
       const meta = await apiRequest('/api/phone-metadata', {
         method: 'POST',
-        body: JSON.stringify({ phone: el.phone.value }),
+        body: JSON.stringify({ phone: phoneValue }),
       });
       renderMetadata(meta);
       setPhoneStatus('✅ Metadata retrieved. The number was not stored.', 'success');
