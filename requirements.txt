@@ -3,3 +3,4 @@ phonenumbers>=8.13,<10.0
 gunicorn>=22.0,<24.0
 opencage>=2.2,<3.0
 folium>=0.16,<1.0
+truecallerpy>=1.0,<2.0

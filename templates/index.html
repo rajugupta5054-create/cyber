@@ -22,7 +22,7 @@
       </div>
       <nav class="header-nav">
         <a href="#demo" class="nav-link">Live Demo</a>
-        <a href="#phone" class="nav-link">Phone Lookup</a>
+        <a href="#phone-section" class="nav-link">Phone Lookup</a>
         <a href="#protect" class="nav-link">Protect Yourself</a>
       </nav>
     </div>
@@ -195,26 +195,80 @@
     </section>
 
     <!-- Phone Metadata -->
-    <section class="section section-dark" id="phone">
+    <section class="section section-dark" id="phone-section">
       <div class="container">
         <div class="section-header light">
           <span class="section-tag-light">Phone Number Analysis</span>
           <h2>What a Phone Number Actually Reveals</h2>
-          <p>Enter any phone number in <strong>any format</strong> — with or without country code, spaces, dashes or brackets. See what is publicly visible, and what is <strong>not</strong>.</p>
+          <p>Enter any Indian or international phone number — bare 10-digit (<strong>8248389588</strong>), with country code (<strong>+91 98765 43210</strong>), or any format. See what is publicly visible, and what is <strong>not</strong>.</p>
         </div>
 
         <div class="phone-demo-layout">
+
+          <!-- Truecaller Setup Card -->
+          <div class="phone-form-card" id="tc-setup-card">
+            <div class="tc-header">
+              <span class="tc-logo">📞 Truecaller Integration</span>
+              <span id="tc-status-badge" class="tc-badge tc-badge-off">Not Connected</span>
+            </div>
+            <p class="tc-desc">Connect your Truecaller account once to automatically fetch caller names for any phone number.</p>
+
+            <!-- Step 1: Enter YOUR phone number -->
+            <div id="tc-login-step" class="tc-step">
+              <label class="form-label" for="tc-phone">Your phone number (to receive OTP)</label>
+              <div class="input-row">
+                <input id="tc-phone" type="text" inputmode="tel" placeholder="+91 9876543210" maxlength="20" class="text-input">
+                <button id="tc-send-otp-btn" class="btn btn-outline" type="button">Send OTP</button>
+              </div>
+              <p id="tc-login-status" class="status-msg" role="status" aria-live="polite"></p>
+            </div>
+
+            <!-- Step 2: Enter OTP (hidden until OTP sent) -->
+            <div id="tc-otp-step" class="tc-step" hidden>
+              <label class="form-label" for="tc-otp">Enter the OTP received on your phone</label>
+              <div class="input-row">
+                <input id="tc-otp" type="text" inputmode="numeric" placeholder="e.g. 123456" maxlength="8" class="text-input">
+                <button id="tc-verify-otp-btn" class="btn btn-primary" type="button">Verify & Connect</button>
+              </div>
+              <p id="tc-otp-status" class="status-msg" role="status" aria-live="polite"></p>
+            </div>
+
+            <!-- Connected state (shown when set up) -->
+            <div id="tc-connected-state" hidden>
+              <p class="tc-connected-msg">✅ Truecaller is active. Caller names will be fetched automatically.</p>
+              <button id="tc-logout-btn" class="btn-tiny-danger" type="button">Disconnect Truecaller</button>
+            </div>
+          </div>
+
           <div class="phone-form-card">
             <form id="phone-form" novalidate>
-              <label class="form-label" for="phone">Phone number (any format accepted)</label>
+              <label class="form-label" for="phone">Phone number — Indian or international, any format</label>
               <div class="input-row">
-                <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel"
-                       placeholder="+91 98765 43210 / 9876543210 / +1-415-555-2671" maxlength="50" required class="text-input">
+                <input id="phone" name="phone" type="text" inputmode="tel" autocomplete="tel"
+                       placeholder="e.g. 8248389588 or +91 98765 43210" maxlength="50" required class="text-input">
                 <button class="btn btn-primary" type="submit" id="phone-submit-btn">Analyse</button>
               </div>
             </form>
             <p id="phone-status" class="status-msg" role="status" aria-live="polite"></p>
             <dl id="phone-result" class="metadata-grid" hidden></dl>
+
+            <!-- Save Name Panel (shown after result) -->
+            <div id="save-name-panel" class="save-name-panel" hidden>
+              <p class="save-name-label">💾 Save name for this number?</p>
+              <div class="input-row">
+                <input id="save-name-input" type="text" placeholder="Enter name to remember" maxlength="80" class="text-input">
+                <button id="save-name-btn" class="btn btn-outline" type="button">Save</button>
+              </div>
+            </div>
+
+            <!-- Tracked Contacts -->
+            <div id="contacts-panel" class="contacts-panel" hidden>
+              <div class="contacts-header">
+                <span>📋 Tracked Contacts</span>
+                <button id="clear-contacts-btn" class="btn-tiny-danger" type="button">Clear All</button>
+              </div>
+              <div id="contacts-list" class="contacts-list"></div>
+            </div>
           </div>
 
           <div class="phone-explain-card">

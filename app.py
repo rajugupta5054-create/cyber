@@ -19,6 +19,12 @@ from phone_metadata import PhoneMetadataError, lookup_phone_metadata
 from topics import TOPIC_DATA
 
 
+try:
+    import truecaller_helper as tc
+    _TC_AVAILABLE = True
+except Exception:
+    _TC_AVAILABLE = False
+
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -153,13 +159,84 @@ def favicon():
 def phone_metadata():
     data = json_body()
     phone = data.get("phone") if data else None
-    if not isinstance(phone, str):
-        return jsonify(error="Enter a phone number in international format, for example +14155552671."), 400
+    if not isinstance(phone, str) or not phone.strip():
+        return jsonify(error="Please enter a phone number, e.g. 8248389588 or +91 98765 43210."), 400
 
     try:
-        return jsonify(lookup_phone_metadata(phone))
+        meta = lookup_phone_metadata(phone)
     except PhoneMetadataError as error:
         return jsonify(error=str(error)), 400
+
+    # Attempt Truecaller name lookup if set up
+    tc_name = None
+    tc_error = None
+    if _TC_AVAILABLE and tc.is_setup():
+        try:
+            tc_result = tc.lookup_name(meta.get("e164") or phone)
+            tc_name = tc_result.get("name")
+        except Exception as e:
+            tc_error = str(e)
+
+    meta["truecaller_name"] = tc_name
+    meta["truecaller_error"] = tc_error
+    meta["truecaller_active"] = _TC_AVAILABLE and tc.is_setup()
+    return jsonify(meta)
+
+
+@app.post("/api/truecaller/login")
+def truecaller_login():
+    """Send OTP to the given phone number to set up Truecaller."""
+    if not _TC_AVAILABLE:
+        return jsonify(error="truecallerpy is not installed."), 500
+    data = json_body()
+    phone = (data or {}).get("phone", "").strip()
+    if not phone:
+        return jsonify(error="Phone number is required."), 400
+    try:
+        result = tc.send_otp(phone)
+        return jsonify(status="otp_sent", detail=result)
+    except Exception as e:
+        return jsonify(error=str(e)), 500
+
+
+@app.post("/api/truecaller/verify")
+def truecaller_verify():
+    """Verify OTP and save installationId."""
+    if not _TC_AVAILABLE:
+        return jsonify(error="truecallerpy is not installed."), 500
+    data = json_body()
+    otp = (data or {}).get("otp", "").strip()
+    if not otp:
+        return jsonify(error="OTP is required."), 400
+    try:
+        result = tc.verify_otp(otp)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify(error=str(e)), 400
+
+
+@app.get("/api/truecaller/status")
+def truecaller_status():
+    """Check whether Truecaller has been set up."""
+    if not _TC_AVAILABLE:
+        return jsonify(available=False, setup=False)
+    return jsonify(available=True, setup=tc.is_setup())
+
+
+@app.delete("/api/truecaller/logout")
+def truecaller_logout():
+    """Remove saved installationId."""
+    if _TC_AVAILABLE:
+        from pathlib import Path
+        import json as _json
+        cfg_path = tc._CONFIG_FILE
+        try:
+            cfg = _json.loads(cfg_path.read_text())
+            cfg.pop("installation_id", None)
+            cfg_path.write_text(_json.dumps(cfg, indent=2))
+        except Exception:
+            pass
+    return jsonify(status="logged_out")
 
 
 @app.post("/api/location-shares")

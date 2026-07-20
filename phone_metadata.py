@@ -1,4 +1,7 @@
-"""Safe public phone-number metadata lookup helpers."""
+"""Safe public phone-number metadata lookup helpers.
+
+Accepts phone numbers in virtually any format the user might type.
+"""
 
 from __future__ import annotations
 import re
@@ -6,7 +9,7 @@ import re
 try:
     import phonenumbers
     from phonenumbers import carrier, geocoder
-except ImportError as error:  # pragma: no cover - depends on local installation
+except ImportError as error:  # pragma: no cover
     raise RuntimeError(
         "The phonenumbers package is required. Install dependencies from requirements.txt."
     ) from error
@@ -16,107 +19,203 @@ class PhoneMetadataError(ValueError):
     """Raised when a supplied phone number cannot be safely interpreted."""
 
 
-def _normalise(raw: str) -> str:
+# ---------------------------------------------------------------------------
+# All default-region fallbacks to try when no country code can be detected.
+# Ordered by most likely users of this cybersecurity demo.
+# ---------------------------------------------------------------------------
+_FALLBACK_REGIONS = [
+    "IN",   # India
+    "US",   # United States / Canada (NANP)
+    "GB",   # United Kingdom
+    "AU",   # Australia
+    "PK",   # Pakistan
+    "BD",   # Bangladesh
+    "NG",   # Nigeria
+    "PH",   # Philippines
+    "DE",   # Germany
+    "FR",   # France
+    "BR",   # Brazil
+    "ZA",   # South Africa
+    "SG",   # Singapore
+    "MY",   # Malaysia
+    "AE",   # UAE
+]
+
+# Chars that are valid separators / decorators in phone numbers
+_SEPARATOR_RE = re.compile(r"[\s\-\.\(\)\[\]\/\\–—·∙•,]")
+
+# Invisible / exotic whitespace
+_INVISIBLE_RE = re.compile(r"[\u200b\u200c\u200d\u00a0\t\r\n\ufeff]")
+
+
+def _strip_to_digits(text: str) -> str:
+    """Return only the digit characters from *text*."""
+    return re.sub(r"\D", "", text)
+
+
+def _candidate_strings(raw: str) -> list[str]:
     """
-    Try to produce a parse-ready string from whatever the user typed.
+    Generate a prioritised list of strings to try feeding into phonenumbers.parse().
 
-    Accepted formats (non-exhaustive):
-      +91 98765 43210      – E.164 with spaces
-      +1-415-555-2671      – E.164 with dashes
-      0091 9876543210      – IDD prefix (00)
-      008248389588         – IDD without country spaces
-      91 9876543210        – country code without + (10–13 digits total)
-      9876543210           – bare 10-digit (treated as IN)
-      (415) 555-2671       – NANP with parens
-      8248389588           – bare number
+    Strategy (tried in order):
+      1. Clean the raw string and try as-is (handles E.164 + most int'l formats).
+      2. Replace IDD prefix 00… → +…
+      3. Replace 011… (US IDD) → +…
+      4. Prepend + to bare digit strings ≥ 11 digits (likely has a country code).
+      5. Use digits-only with common country-code lengths tried.
+      6. Keep the original raw string as a last-ditch attempt.
     """
-    phone = raw.strip()
+    # Step 0: basic cleanup
+    clean = _INVISIBLE_RE.sub(" ", raw).strip()
+    # Normalise separators but KEEP the leading + if present
+    if clean.startswith("+"):
+        clean = "+" + _SEPARATOR_RE.sub("", clean[1:])
+    else:
+        clean = _SEPARATOR_RE.sub("", clean)
 
-    # Remove invisible / exotic whitespace
-    phone = re.sub(r"[\u200b\u00a0\t]", " ", phone)
+    digits = _strip_to_digits(raw)
+    candidates: list[str] = []
 
-    # Too long – reject early
-    if len(phone) > 50:
-        raise PhoneMetadataError("Phone number is too long.")
+    # 1. As cleaned
+    candidates.append(clean)
 
-    # Strip common formatting characters to get digits-only view
-    digits_only = re.sub(r"[\s\-().+]", "", phone)
+    # 2. IDD 00 → +
+    if digits.startswith("00") and len(digits) >= 10:
+        candidates.append("+" + digits[2:])
 
-    if not digits_only.isdigit():
-        # Still has letters or weird chars → pass through as-is and let
-        # phonenumbers raise a useful error
-        return phone
+    # 3. IDD 011 (North America) → +
+    if digits.startswith("011") and len(digits) >= 11:
+        candidates.append("+" + digits[3:])
 
-    # IDD prefix 00 → +
-    if digits_only.startswith("00") and len(digits_only) >= 10:
-        return "+" + digits_only[2:]
+    # 4. Bare digits with + prepended (country code assumed present)
+    if len(digits) >= 11:
+        candidates.append("+" + digits)
 
-    # Already has a leading +
-    if phone.startswith("+"):
-        return phone
+    # 5. Common 1-digit country code + remaining digits
+    if len(digits) >= 11:
+        for cc_len in (1, 2, 3):
+            candidates.append("+" + digits[:cc_len] + digits[cc_len:])
 
-    # Bare digits: if >= 11 digits assume country code is included
-    if len(digits_only) >= 11:
-        return "+" + digits_only
+    # 6. Original raw as-is (last resort)
+    candidates.append(raw.strip())
 
-    # 10-digit bare number – default to India (largest user base here)
-    if len(digits_only) == 10:
-        return "+91" + digits_only
+    # Deduplicate while preserving order
+    seen: set[str] = set()
+    unique: list[str] = []
+    for c in candidates:
+        if c not in seen:
+            seen.add(c)
+            unique.append(c)
+    return unique
 
-    # Fallback: prepend + and hope phonenumbers figures it out
-    return "+" + digits_only
+
+def _try_parse(candidate: str, region: str | None) -> "phonenumbers.PhoneNumber | None":
+    """Return a parsed PhoneNumber or None — never raises."""
+    try:
+        return phonenumbers.parse(candidate, region)
+    except Exception:
+        return None
+
+
+def _is_usable(number: "phonenumbers.PhoneNumber") -> bool:
+    return (
+        phonenumbers.is_possible_number(number)
+        and phonenumbers.is_valid_number(number)
+    )
 
 
 def lookup_phone_metadata(raw_phone: str) -> dict[str, str | bool | int | None]:
-    """Return public numbering metadata without geocoding or live tracking.
+    """Return public numbering metadata for a phone number in *any* format.
 
-    Accepts numbers in any common format:
-      - International E.164:  +91 98765 43210
-      - With dashes/parens:   +1-415-555-2671 / (415) 555-2671
-      - IDD prefix:           0091 9876543210
-      - Country code, no +:   91 9876543210
-      - Bare 10-digit (IN):   9876543210
+    Accepted formats include (but are not limited to):
+      +91 8248389588          – E.164 with space
+      +918248389588           – E.164 no space
+      +1-415-555-2671         – E.164 with dashes
+      (415) 555-2671          – NANP with parens (region-aware)
+      0091 9876543210         – IDD prefix 00
+      011 44 20 7946 0958     – US IDD prefix 011
+      91 9876543210           – country code without +
+      9876543210              – bare 10-digit (India default)
+      8248389588              – bare 10-digit (India default)
+      +44.20.7946.0958        – dots as separators
+      +49 30 12345678         – German landline
+      +55 11 91234-5678       – Brazilian mobile
     """
+    raw = (raw_phone or "").strip()
 
-    try:
-        normalised = _normalise(raw_phone)
-    except PhoneMetadataError:
-        raise
+    if not raw:
+        raise PhoneMetadataError("Please enter a phone number.")
+    if len(raw) > 60:
+        raise PhoneMetadataError("The input is too long to be a phone number.")
 
-    # First try strict parse (no default region)
-    number = None
-    try:
-        number = phonenumbers.parse(normalised, None)
-    except phonenumbers.NumberParseException:
-        pass
+    digits = _strip_to_digits(raw)
+    if len(digits) < 4:
+        raise PhoneMetadataError("Too few digits — please enter a complete phone number.")
 
-    # If that failed, try with a default region of IN as fallback
+    candidates = _candidate_strings(raw)
+    number: "phonenumbers.PhoneNumber | None" = None
+
+    # --- Pass 1: try every candidate without a default region ---
+    for candidate in candidates:
+        parsed = _try_parse(candidate, None)
+        if parsed and _is_usable(parsed):
+            number = parsed
+            break
+
+    # --- Pass 2: try every candidate with each fallback region ---
     if number is None:
-        try:
-            number = phonenumbers.parse(raw_phone.strip(), "IN")
-        except phonenumbers.NumberParseException as error:
-            raise PhoneMetadataError(
-                "Could not parse this number. Please include the country code, e.g. +91 98765 43210."
-            ) from error
+        for region in _FALLBACK_REGIONS:
+            for candidate in candidates:
+                parsed = _try_parse(candidate, region)
+                if parsed and _is_usable(parsed):
+                    number = parsed
+                    break
+            if number:
+                break
 
-    if not phonenumbers.is_possible_number(number):
-        raise PhoneMetadataError("This does not look like a valid phone number.")
-    if not phonenumbers.is_valid_number(number):
+    # --- Pass 3: accept a "possible" (not necessarily valid) number ---
+    if number is None:
+        for region in [None] + _FALLBACK_REGIONS:  # type: ignore[list-item]
+            for candidate in candidates:
+                parsed = _try_parse(candidate, region)
+                if parsed and phonenumbers.is_possible_number(parsed):
+                    number = parsed
+                    break
+            if number:
+                break
+
+    if number is None:
         raise PhoneMetadataError(
-            "The number is not valid for its country's numbering plan."
+            "Could not recognise this phone number. "
+            "Try entering just the 10-digit number (e.g. 8248389588) "
+            "or include the country code (e.g. +91 98765 43210)."
         )
 
-    number_type = phonenumbers.number_type(number)
-    type_name = phonenumbers.PhoneNumberType.to_string(number_type).replace("_", " ").title()
+    # Final validity check (only warn, do not block, for "possible" numbers)
+    is_valid = phonenumbers.is_valid_number(number)
 
-    # Format back to international for display
-    formatted = phonenumbers.format_number(
+    number_type = phonenumbers.number_type(number)
+    type_name = (
+        phonenumbers.PhoneNumberType.to_string(number_type)
+        .replace("_", " ")
+        .title()
+    )
+
+    formatted_international = phonenumbers.format_number(
         number, phonenumbers.PhoneNumberFormat.INTERNATIONAL
+    )
+    formatted_e164 = phonenumbers.format_number(
+        number, phonenumbers.PhoneNumberFormat.E164
+    )
+    formatted_national = phonenumbers.format_number(
+        number, phonenumbers.PhoneNumberFormat.NATIONAL
     )
 
     return {
-        "valid": True,
-        "formatted_number": formatted,
+        "valid": is_valid,
+        "formatted_number": formatted_international,
+        "e164": formatted_e164,
+        "national_format": formatted_national,
         "country_code": number.country_code,
         "country_or_region": geocoder.region_code_for_number(number) or None,
         "number_type": type_name,
