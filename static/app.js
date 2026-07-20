@@ -16,11 +16,16 @@ const el = {
   expiresAt:    document.querySelector('#expires-at'),
   mapBadge:     document.querySelector('#map-badge'),
   coordDisplay: document.querySelector('#coord-display'),
-  phoneForm:    document.querySelector('#phone-form'),
-  phone:        document.querySelector('#phone'),
-  personName:   document.querySelector('#person-name'),
-  phoneStatus:  document.querySelector('#phone-status'),
-  phoneResult:  document.querySelector('#phone-result'),
+  phoneForm:       document.querySelector('#phone-form'),
+  phone:           document.querySelector('#phone'),
+  phoneStatus:     document.querySelector('#phone-status'),
+  phoneResult:     document.querySelector('#phone-result'),
+  saveNamePanel:   document.querySelector('#save-name-panel'),
+  saveNameInput:   document.querySelector('#save-name-input'),
+  saveNameBtn:     document.querySelector('#save-name-btn'),
+  contactsPanel:   document.querySelector('#contacts-panel'),
+  contactsList:    document.querySelector('#contacts-list'),
+  clearContactsBtn:document.querySelector('#clear-contacts-btn'),
 
   // Threat card values
   displayIp:      document.querySelector('#display-ip'),
@@ -243,36 +248,112 @@ async function copyLink() {
   }
 }
 
+/* ── Contacts (localStorage) ───────────────────────────── */
+const CONTACTS_KEY = 'geotrace_contacts';
+
+function loadContacts() {
+  try { return JSON.parse(localStorage.getItem(CONTACTS_KEY) || '{}'); }
+  catch { return {}; }
+}
+
+function saveContacts(contacts) {
+  localStorage.setItem(CONTACTS_KEY, JSON.stringify(contacts));
+}
+
+function getNameForNumber(e164) {
+  return loadContacts()[e164] || null;
+}
+
+function saveNameForNumber(e164, name) {
+  const contacts = loadContacts();
+  contacts[e164] = name;
+  saveContacts(contacts);
+  renderContactsList();
+}
+
+function deleteContact(e164) {
+  const contacts = loadContacts();
+  delete contacts[e164];
+  saveContacts(contacts);
+  renderContactsList();
+}
+
+function renderContactsList() {
+  if (!el.contactsList) return;
+  const contacts = loadContacts();
+  const entries = Object.entries(contacts);
+  if (entries.length === 0) {
+    el.contactsPanel.hidden = true;
+    return;
+  }
+  el.contactsPanel.hidden = false;
+  el.contactsList.replaceChildren();
+  entries.forEach(([e164, name]) => {
+    const row = document.createElement('div');
+    row.className = 'contact-row';
+    row.innerHTML = `
+      <span class="contact-name">${name}</span>
+      <span class="contact-number">${e164}</span>
+      <div class="contact-actions">
+        <button class="btn-tiny" data-e164="${e164}">🔍 Lookup</button>
+        <button class="btn-tiny-danger" data-del="${e164}">✕</button>
+      </div>`;
+    row.querySelector('[data-e164]').addEventListener('click', () => {
+      el.phone.value = e164;
+      el.phone.closest('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      document.querySelector('#phone-section').scrollIntoView({ behavior: 'smooth' });
+    });
+    row.querySelector('[data-del]').addEventListener('click', () => deleteContact(e164));
+    el.contactsList.appendChild(row);
+  });
+}
+
 /* ── Phone metadata ─────────────────────────────────────── */
+let _lastE164 = null;
+
 function renderMetadata(meta, name) {
+  _lastE164 = meta.e164 || null;
   const fields = [
-    ['Name',                  name || null],
-    ['Valid',                 meta.valid ? '\u2705 Yes' : '\u26a0\ufe0f Possibly valid'],
-    ['International Format',  meta.formatted_number],
-    ['E.164 Format',          meta.e164],
-    ['National Format',       meta.national_format],
-    ['Country / Region',      meta.country_or_region],
-    ['Country Code',          meta.country_code ? `+${meta.country_code}` : null],
-    ['Number Type',           meta.number_type],
-    ['Geographic Area',       meta.geographic_description],
-    ['Carrier',               meta.carrier],
-    ['\u26a0\ufe0f Important Notice',  meta.notice],
+    ['\ud83d\udc64 Name',             name ? name : null],
+    ['\u2705 Valid',                 meta.valid ? 'Yes' : 'Possibly valid'],
+    ['\ud83d\udcf1 International',   meta.formatted_number],
+    ['E.164',                        meta.e164],
+    ['National Format',              meta.national_format],
+    ['\ud83c\udf0d Country / Region',meta.country_or_region],
+    ['Country Code',                 meta.country_code ? `+${meta.country_code}` : null],
+    ['Number Type',                  meta.number_type],
+    ['\ud83d\udccd Geographic Area', meta.geographic_description],
+    ['\ud83d\udcf6 Carrier',         meta.carrier],
+    ['\u26a0\ufe0f Notice',          meta.notice],
   ];
   el.phoneResult.replaceChildren();
   fields.forEach(([label, value]) => {
-    if (label === 'Name' && !value) return; // skip if name not entered
+    if (!value) return;
     const dt = document.createElement('dt');
     const dd = document.createElement('dd');
     dt.textContent = label;
-    dd.textContent = value || 'Not available';
-    if (label === 'Name') {
+    dd.textContent = value;
+    if (label.includes('Name')) {
       dt.style.color = 'var(--accent)';
-      dd.style.fontWeight = '600';
-      dd.style.fontSize = '1.05em';
+      dd.style.fontWeight = '700';
+      dd.style.fontSize = '1.1em';
+      dd.style.color = '#fff';
     }
     el.phoneResult.append(dt, dd);
   });
   el.phoneResult.hidden = false;
+
+  // Show save-name panel if name not already saved
+  if (el.saveNamePanel && _lastE164) {
+    if (name) {
+      // Already has a name — pre-fill the input, hide the save panel
+      el.saveNamePanel.hidden = true;
+      if (el.saveNameInput) el.saveNameInput.value = name;
+    } else {
+      el.saveNamePanel.hidden = false;
+      if (el.saveNameInput) el.saveNameInput.value = '';
+    }
+  }
 }
 
 /* ── Event listeners ────────────────────────────────────── */
@@ -280,12 +361,44 @@ if (el.start)    el.start.addEventListener('click', startSharing);
 if (el.stop)     el.stop.addEventListener('click', stopSharing);
 if (el.copyLink) el.copyLink.addEventListener('click', copyLink);
 
+// Save name button
+if (el.saveNameBtn) {
+  el.saveNameBtn.addEventListener('click', () => {
+    const name = (el.saveNameInput.value || '').trim();
+    if (!name) { el.saveNameInput.focus(); return; }
+    if (!_lastE164) return;
+    saveNameForNumber(_lastE164, name);
+    el.saveNamePanel.hidden = true;
+    // Re-render with name shown
+    const dt = document.createElement('dt');
+    const dd = document.createElement('dd');
+    dt.textContent = '\ud83d\udc64 Name';
+    dd.textContent = name;
+    dt.style.color = 'var(--accent)';
+    dd.style.fontWeight = '700';
+    dd.style.fontSize = '1.1em';
+    dd.style.color = '#fff';
+    el.phoneResult.prepend(dd, dt);
+    setPhoneStatus(`\u2705 Name "${name}" saved for ${_lastE164}`, 'success');
+  });
+}
+
+// Clear all contacts
+if (el.clearContactsBtn) {
+  el.clearContactsBtn.addEventListener('click', () => {
+    if (confirm('Delete all tracked contacts?')) {
+      saveContacts({});
+      renderContactsList();
+    }
+  });
+}
+
 if (el.phoneForm) {
   el.phoneForm.addEventListener('submit', async e => {
     e.preventDefault();
     el.phoneResult.hidden = true;
+    if (el.saveNamePanel) el.saveNamePanel.hidden = true;
 
-    // Trim the value so leading/trailing whitespace never causes a false-empty send
     const phoneValue = (el.phone.value || '').trim();
     if (!phoneValue) {
       setPhoneStatus('Please enter a phone number, e.g. 8248389588 or +91 98765 43210.', 'error');
@@ -293,15 +406,15 @@ if (el.phoneForm) {
       return;
     }
 
-    setPhoneStatus('Looking up public metadata…');
+    setPhoneStatus('Looking up public metadata\u2026');
     try {
       const meta = await apiRequest('/api/phone-metadata', {
         method: 'POST',
         body: JSON.stringify({ phone: phoneValue }),
       });
-      const enteredName = (el.personName ? el.personName.value : '').trim();
-      renderMetadata(meta, enteredName);
-      setPhoneStatus('\u2705 Metadata retrieved. The number was not stored.', 'success');
+      const savedName = getNameForNumber(meta.e164);
+      renderMetadata(meta, savedName);
+      setPhoneStatus('\u2705 Metadata retrieved.' + (savedName ? ` Known contact: ${savedName}` : ' Save a name to track this number.'), 'success');
     } catch (err) {
       setPhoneStatus(err.message, 'error');
     }
@@ -311,3 +424,4 @@ if (el.phoneForm) {
 /* ── Boot ───────────────────────────────────────────────── */
 populatePassiveData();
 initMap();
+renderContactsList();

@@ -206,11 +206,6 @@
         <div class="phone-demo-layout">
           <div class="phone-form-card">
             <form id="phone-form" novalidate>
-              <label class="form-label" for="person-name">Name (optional)</label>
-              <div class="input-row" style="margin-bottom: 10px;">
-                <input id="person-name" name="person-name" type="text" autocomplete="name"
-                       placeholder="e.g. Raju Gupta" maxlength="80" class="text-input">
-              </div>
               <label class="form-label" for="phone">Phone number — Indian or international, any format</label>
               <div class="input-row">
                 <input id="phone" name="phone" type="text" inputmode="tel" autocomplete="tel"
@@ -220,6 +215,24 @@
             </form>
             <p id="phone-status" class="status-msg" role="status" aria-live="polite"></p>
             <dl id="phone-result" class="metadata-grid" hidden></dl>
+
+            <!-- Save Name Panel (shown after result) -->
+            <div id="save-name-panel" class="save-name-panel" hidden>
+              <p class="save-name-label">💾 Save name for this number?</p>
+              <div class="input-row">
+                <input id="save-name-input" type="text" placeholder="Enter name to remember" maxlength="80" class="text-input">
+                <button id="save-name-btn" class="btn btn-outline" type="button">Save</button>
+              </div>
+            </div>
+
+            <!-- Tracked Contacts -->
+            <div id="contacts-panel" class="contacts-panel" hidden>
+              <div class="contacts-header">
+                <span>📋 Tracked Contacts</span>
+                <button id="clear-contacts-btn" class="btn-tiny-danger" type="button">Clear All</button>
+              </div>
+              <div id="contacts-list" class="contacts-list"></div>
+            </div>
           </div>
 
           <div class="phone-explain-card">
